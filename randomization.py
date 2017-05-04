@@ -96,9 +96,4 @@ df= df.T
 #df.reset_index(inplace = 'True')
 df.columns = ['Cat.1','Cat.2','Cat.3','Cat.4','Cat.5','TS','Load','question','present_absent','trial_type']
 df.TS = df.TS.astype('float')
-
 df.to_csv('randomization.csv')
-#df.groupby(['trial_type','present_absent', 'Load']).TS.count()
-#df.groupby(['trial_type', 'Load']).TS.count()
-df.groupby(['trial_type', 'Load']).TS.mean()
-df
