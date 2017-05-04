@@ -1,0 +1,121 @@
+# Loading libraries
+import pandas as pd
+# Reading csv file
+df = pd.DataFrame.from_csv('C:/Users/luca.chech.16/Desktop/final/Participant_10Session_2.csv')
+df.rename(columns = {'RT to TO':'RT_to_TO'}, inplace = True) 
+#Converting useful dataframe columns into lists
+trial_N = df['Trial N.'].tolist()
+ts_rating = df['True Skill Rating'].tolist()
+load = df['Load'].tolist()
+trial_type = df['Trial Type'].tolist()
+audio = df['Audio'].tolist()
+RT_to_TO = df['RT_to_TO'].tolist()
+RT_to_TO_2 = df['RT to TO.1'].tolist()
+RT_to_VS = df['RT VS'].tolist()
+analysis_dict ={z[0]:list(z[1:]) for z in zip(trial_N,ts_rating,load,trial_type,audio,RT_to_TO,RT_to_TO_2,RT_to_VS)}
+#######
+rt_to_cleaned_i = []
+rt_to_cleaned = []
+
+for i in [i for i,x in enumerate(RT_to_TO) if len(x) != 2]:
+    rt_to_cleaned_i.append(i)
+    
+for each in RT_to_TO:
+    if len(each) != 2:
+        rt_to_cleaned.append(each[11:16])
+
+dictionary1 = dict(zip(rt_to_cleaned_i, rt_to_cleaned))
+#######
+#######
+rt_to_cleaned_2_i = []
+rt_to_cleaned_2 = []
+
+for i in [i for i,x in enumerate(RT_to_TO_2) if len(x) >6]:
+    rt_to_cleaned_2_i.append(i)
+    
+for each in RT_to_TO_2:
+    if len(each) >6:
+        rt_to_cleaned_2.append(each[10:15])
+
+dictionary2 = dict(zip(rt_to_cleaned_2_i, rt_to_cleaned_2))
+#######
+#######
+rt_to_final = []
+for i in range(480):
+    if i in dictionary1:
+        rt_to_final.append(dictionary1[i])
+    elif i in dictionary2:
+        rt_to_final.append(dictionary2[i])
+    else:
+        rt_to_final.append('NaN')
+rt_to_final
+len(rt_to_final)
+#######
+#######
+rt_vs_cleaned = []
+response_key=[]
+
+for each in RT_to_VS:
+    if len(each) != 2:
+        rt_vs_cleaned.append(each[7:12])
+        response_key.append(each[3:4])
+#######
+Acc_VS = []
+for i in range(0,480):
+    if trial_N[i] < 240:
+        if trial_type[i] == 'Target Present' and response_key[i] == 'q':
+            Acc_VS.append(1)
+        if trial_type[i] == 'Target Present' and response_key[i] == 'p':
+            Acc_VS.append(0)
+        if trial_type[i] == 'Target Absent' and response_key[i] == 'p':
+            Acc_VS.append(1)   
+        if trial_type[i] == 'Target Absent' and response_key[i] == 'q':
+            Acc_VS.append(0)
+    if trial_N[i] >= 240:
+        if trial_type[i] == 'Target Present' and response_key[i] == 'p':
+            Acc_VS.append(1)
+        if trial_type[i] == 'Target Present' and response_key[i] == 'q':
+            Acc_VS.append(0)
+        if trial_type[i] == 'Target Absent' and response_key[i] == 'q':
+            Acc_VS.append(1)   
+        if trial_type[i] == 'Target Absent' and response_key[i] == 'p':
+            Acc_VS.append(0)
+
+# Converting lists into pandas.series...
+rt_to = pd.Series(data=rt_to_final)
+rt_vs = pd.Series(data=rt_vs_cleaned)
+response_key = pd.Series(data=response_key)
+Acc_VS = pd.Series(data=Acc_VS)
+# ...and combining them into a pandas dataframe
+rt = pd.concat([response_key, Acc_VS, rt_vs, rt_to], axis = 1)
+
+#Creating a dataframe by selecting only certain columns from the df created at line 4
+new = df.filter(['Trial N.','Load','Trial Type','Audio'], axis=1)
+# Joining the 'new' and 'rt' dafaframes into a single dataframe 
+result = pd.concat([new, rt], axis=1, join='inner')
+#result[0] = result[0].astype('float')
+result.columns = ['Trial_N','Load','Trial_Type','Audio','Response_Key','Acc_VS','RT_vs','RT_to']
+result.RT_vs = result.RT_vs.astype('float')
+result.RT_to = result.RT_to.astype('float')
+
+# Using the 'Trial_N' column
+result.set_index(result.Trial_N, drop=True, append=False, inplace=True, verify_integrity=False)
+# Sorting the df according to the index
+result.sort_index(axis=0, inplace=True)
+#print result.head()
+
+#print result.groupby(['Load','Acc_VS']).RT_vs.mean()
+#print result.groupby(['Load','Audio']).RT_vs.mean()
+#print result.groupby(['Load','Audio','Acc_VS']).RT_vs.mean()
+
+#print result.groupby(['Load','Acc_VS']).Acc_VS.sum()
+#print result.groupby(['Load','Audio']).Acc_VS.sum()
+#print result.groupby(['Load','Audio','Acc_VS']).Acc_VS.sum()
+
+#print result.groupby(['Load','Trial_Type','Acc_VS']).RT_vs.mean()
+#print result.groupby(['Load','Trial_Type','Acc_VS']).Acc_VS.sum()
+
+#print result.groupby(['Load','Acc_VS','Audio']).RT_to.mean()
+print result.groupby(['Load','Acc_VS','Audio']).Audio.count()
+print result.groupby(['Load','Acc_VS','Audio']).RT_to.count()
+print result.groupby(['Load','Audio']).RT_to.count()
